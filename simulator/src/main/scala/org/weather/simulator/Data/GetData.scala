@@ -8,20 +8,10 @@ import org.json4s._
 import org.json4s.native.JsonMethods._
 import java.io.FileNotFoundException
 
-/**
- * @author anandraj
- * @written 22 June, 2016
- * @description Object to handle data needs of the application
- * 	1. Read data mapping file to get mapping between City -> (IATACode, BOM Code)
- * 	2. Download required historical weather data from Bureau of Meteorology(BOM) Australia.
- *
- */
-
 object GetData {
 
   /* 
-   * Get the Cities for which weather forecasting is done with mapping to IATA Codes and BOM File codes for the city.
-   * Mapping is stored in the dataFolder defined above in file mapping.txt
+   * Get the Cities for which weather forecasting is done with mapping to area Codes and BOM File codes for the city.
    */
   def getMappingData(): Map[String, ConstData.codes] = {
     val mapping = for (
@@ -56,11 +46,9 @@ object GetData {
   def getMaxMinDate(dateRange: String) = {
     //Read only first line from the date range file. Then split the files by default field Separator.   
     val dates = dateRange.split(ConstData.defaultFieldSep)
-
     require(dates.size == 2 && //Only a tuple of size 2 is supplied
       (dates(0) + dates(1)).forall(_.isDigit) && //Check all the digits is number.
       dates(0).toInt < dates(1).toInt, "date range is not valid") //Check if the left date is less than right
-
     ConstData.dateRange(dates(0).toInt, dates(1).toInt)
 
   }

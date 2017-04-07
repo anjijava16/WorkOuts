@@ -63,11 +63,4 @@ object FileOperations {
           + ". Data source is not bom and files not found in the current folder")
     }
   }
-
-  def writeForecasts(values: Array[String], outFile: String) = {
-    val pw = new PrintWriter(new File(outFile))
-    for (value <- values) pw.write(value + "\n")
-    pw.close
-  }
-
 }

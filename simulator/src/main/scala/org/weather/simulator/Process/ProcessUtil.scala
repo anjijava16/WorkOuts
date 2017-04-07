@@ -17,7 +17,7 @@ object ProcessUtil {
   private val dataPattern = "^,[0-9]{4}-[0-9]{2}-[0-9]{1,2},".r
   /*
    * From the input year and month, construct the date format as (year + month) which is required to download
-   * observations from bom and return date as Int.
+   * observations from bom.
    * 
    */
   def getDate(year: String, month: String) = {
@@ -38,27 +38,18 @@ object ProcessUtil {
 
     date
   }
-  
+
+  //Predict the conditions from based on the RH, Cloud cover, Sunshine, Average Temp factors.
   def predictOutlook(RH: Int, cloudCover: Int, sunShine: Double, averageTemp: Double) = {
     //Rain. When highly humid, high cloud cover and less sunshine.
-    if (RH > 80 && cloudCover > 6 && sunShine < 3) "Rain" 
+    if (RH > 80 && cloudCover > 6 && sunShine < 3) "Rain"
     else if (sunShine > 5) "Sunny" //When sunshine is for more than 5 hours then, Sunny.
     else if (cloudCover > 6) "Cloudy" //When high cloud cover then cloudy.
     else if (averageTemp < 15) "Cold" //If temperature is below 15. Then Cold.
     else "Partly Cloudy" //If not everything else, then "Partly Cloudy"
 
   }
-
-   /*
-   * Determines the t+1th day for which the forecast is being performed. Here, n is the max date in the observations.
-   * The date is converted from Australia Date to UTC format as the time is suffixed by 'Z' in the sampled output file.
-   */
-  def calculateDateTime(dateTime : String) = {
-    dateTime.split('-')
-      .map(t => new DateTime(t(0).toInt, t(1).toInt, t(2).toInt, 12, 0, 0, 0))
-      .head.withZone(DateTimeZone.UTC)
-      .toString(DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss'Z"))
-  }
+  //Download the file from the bom site based on the city and date supplied
   def downlaodObservationData(cityToCodeMapping: Map[String, ConstData.codes], date: Int) = {
 
     for (city <- cityToCodeMapping) {
@@ -101,7 +92,7 @@ object ProcessUtil {
 
     try {
       Source.fromFile(filePath)(ConstData.fileCodec).getLines
-      .filter(x => dataPattern.findFirstIn(x).isDefined)
+        .filter(x => dataPattern.findFirstIn(x).isDefined)
         .map(x => {
           val y = x.split(ConstData.bomFileSep)
           //If values missing, the assume zero.
@@ -121,24 +112,23 @@ object ProcessUtil {
         + ". Data source is not bom and files not found in the current folder")
     }
   }
-  def filterForDay(cityToCodeMapping: Map[String, ConstData.codes],dateFilter: Int, dayOfMonth: Int) = {
+
+  //Filter for the records based on the day of the month
+
+  def filterForDay(cityToCodeMapping: Map[String, ConstData.codes], dateFilter: Int, dayOfMonth: Int) = {
     val filteredList = scala.collection.mutable.MutableList[String]()
     for (city <- cityToCodeMapping) {
       val listOfrecords = getBomObservations(city._2.fileCode)
       val geoCordinates = GetData.getLatLong(city._1)
-      val filteredRecord =  (listOfrecords(dayOfMonth))
-      val conditions = predictOutlook(filteredRecord.relative_humidity, filteredRecord.cloud_amount, filteredRecord.sunshine, (filteredRecord.max_temp + filteredRecord.min_temp )/2)
-      val dateInUTC = (filteredRecord.date)+("T09:00:00Z") //Data is captured for 9AM in BOM
-
-      filteredList += (city._1+'|'+geoCordinates+'|'+dateInUTC+'|'+conditions+'|'+filteredRecord.max_temp+'|'+filteredRecord.min_temp +'|'+filteredRecord.pressure+'|'+filteredRecord.relative_humidity).toString
+      val filteredRecord = (listOfrecords(dayOfMonth))
+      val conditions = predictOutlook(filteredRecord.relative_humidity, filteredRecord.cloud_amount, filteredRecord.sunshine, (filteredRecord.max_temp + filteredRecord.min_temp) / 2)
+      val dateInUTC = (filteredRecord.date) + ("T09:00:00Z") //Data is captured for 9AM in BOM
+      //construct the output file format
+      filteredList += (city._1 + '|' + geoCordinates + '|' + dateInUTC + '|' + conditions + '|' + filteredRecord.max_temp + '|' + filteredRecord.min_temp + '|' + filteredRecord.pressure + '|' + filteredRecord.relative_humidity).toString
     }
-    
+
     println("Location|Position|date|Conditions|Maximum Temperature|minimum Temperature|Pressure|Humidity")
-    
-    val title : String = "Location|Position|date|Conditions|Maximum Temperature|minimum Temperature|Pressure|Humidity"
-    val allRecordsString = filteredList
-    val printFile : String = title + "\n" + allRecordsString.toString
-    println(printFile)
+    filteredList.foreach(println)
   }
 
 }
