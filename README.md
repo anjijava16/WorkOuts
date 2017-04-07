@@ -24,3 +24,8 @@ The main class of the application is org.weather.simulator.Process.ProcessWeathe
 2. The date passed through the arguments is checked for the range and it should be in range of "201602|201703" for which the data is available in the BOM website at this point of time.
 3. The weather files are downloaded from the BOM site for all the cities taken into consideration and the given month and year.
 4. The records are filtered for a day and the output is constructed. The location are fetched using google API.
+
+#references
+
+1. https://github.com/anandrajj/toy_weather_forecast
+2. http://www.bom.gov.au/climate/dwo/
